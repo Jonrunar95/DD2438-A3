@@ -84,6 +84,8 @@ public class Drone
             float t2 = (float)((Math.Sqrt(4 * R * R * x - x * z + y * y) - y) / x);
 
             //if (t1 < 0 || t2 < 0) throw new Exception("Invalid intercept calculations");
+            if (t1 <= 0 && t2 <= 0) return float.NaN;
+
             float t = Mathf.Clamp(Math.Min(t1, t2), 0, 10000f);
 
             if (t >= 100f)
@@ -121,12 +123,15 @@ public class Drone
 public class Manager
 {
     private Dictionary<int, Drone> drone_population;
-    private float drone_radius;
+    private float drone_radius, intercept_upper_m, surrounding_radius;
 
-    public Manager(float drone_radius)
+    public Manager(float drone_radius, float intercept_upper_m, float surrounding_radius)
     {
         this.drone_radius = drone_radius;
+        this.intercept_upper_m = intercept_upper_m;
+        this.surrounding_radius = surrounding_radius;
         drone_population = new Dictionary<int, Drone>();
+
     }
 
     private List<Tuple<Drone, float>> Interceptions(Drone drone)
@@ -149,6 +154,26 @@ public class Manager
         return res;
     }
 
+    private List<Tuple<Drone, float>> Surrounding(Drone drone)
+    {
+        List<Tuple<Drone, float>> res = new List<Tuple<Drone, float>>();
+
+        foreach (int key in drone_population.Keys)
+        {
+            Drone check = drone_population[key];
+            if (check != drone)
+            {
+                float dist = drone.Distance(check);
+
+                if (dist <= drone_radius)
+                {
+                    res.Add(new Tuple<Drone, float>(check, dist));
+                }
+            }
+        }
+        return res;
+    }
+
     private void DrawIntercept(Drone from, float t)
     {
         //Debug.Log(">> Min intercept: " + t*Time.deltaTime);
@@ -158,9 +183,99 @@ public class Manager
         Debug.DrawLine(from.position, from.position + from.direction * from.velocity * t * Time.deltaTime, Color.magenta, 0.1f);
     }
 
+    public float InterceptDistance(Drone info_drone, float t)
+    {
+        return (info_drone.direction * info_drone.velocity * t * Time.deltaTime).magnitude;
+    }
+
+
+    public Vector3 AdjustIntercept(Drone info_drone, Vector3 move)
+    {
+        /*
+            If drone intercepts another drone, sway away from it.
+         */
+
+        List<Tuple<Drone, float>> intercepts = Interceptions(info_drone);
+
+        Debug.Log(">> count : " + intercepts.Count);
+        if (intercepts.Count != 0)
+        {
+
+            Drone min_drone = null;
+            float min_intercept = 1000000000;
+
+            foreach (Tuple<Drone, float> t in intercepts)
+            {
+                if (t.Item2 < min_intercept)
+                {
+                    min_intercept = t.Item2;
+                    min_drone = t.Item1;
+                }
+            }
+
+            Debug.Log(">> min: " + InterceptDistance(info_drone, min_intercept));
+            if (InterceptDistance(info_drone, min_intercept) <= intercept_upper_m)
+            {
+                float angle = Vector3.Angle(move, min_drone.direction);
+                move = Quaternion.AngleAxis(-angle*Time.deltaTime, Vector3.up) * move;
+            }
+
+
+            if (InterceptDistance(info_drone, min_intercept) <= 10f)
+            {
+                info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - ((1 / InterceptDistance(info_drone, min_intercept))), 6, 15));
+            }
+            else
+            {
+                info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + (1 / InterceptDistance(info_drone, min_intercept)), 0, 15));
+            }
+            DrawIntercept(info_drone, min_intercept);
+
+        }
+        else
+        {
+            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + 0.5f, 0, 15));
+        }
+        return move;
+    }
+
+    public Vector3 AdjustFormation(Drone info_drone, Vector3 move)
+    {
+        List<Tuple<Drone, float>> surrounding = Surrounding(info_drone);
+        Vector3 adjust_vector = new Vector3(0, 0, 0);
+        if (surrounding.Count != 0)
+        {
+            //Compute weights
+
+            
+            List<float> weights = new List<float>();
+            float sum = 0;
+            foreach(Tuple<Drone, float> t in surrounding)
+            {
+                weights.Add(t.Item2);
+                sum += t.Item2;
+            }
+
+            for(int i = 0; i < surrounding.Count; i++)
+            {
+                adjust_vector += (-info_drone.position + surrounding[i].Item1.position).normalized * (weights[i] / sum);
+            }
+        }
+
+        return (0.1f*move - 0.9f*adjust_vector).normalized;
+    }
+
+    public void AdjustGoalSpeed(Drone info_drone, Vector3 goal)
+    {
+        if (Vector3.Distance(goal, info_drone.position) <= 15f)
+        {
+            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - 0.5f, 1, 15));
+        }
+    }
+
     public Vector3 NextMove(DroneController drone, Vector3 goal)
     {
-        
+        float dt = Time.deltaTime;
         Drone info_drone = drone_population[drone.GetInstanceID()];
 
         
@@ -168,49 +283,13 @@ public class Manager
 
         float v = info_drone.GetEstimatedVelocityInput();
 
-        /*Test pid controller
+        Vector3 move = (goal - drone.transform.position).normalized;
 
 
-        
-
-        return (goal - info_drone.position) * v;
-        */
-
-        Vector3 move = (goal - info_drone.position).normalized;
-
-        List<Tuple<Drone, float>> intercepts = Interceptions(info_drone);
-
-        Debug.Log(">> count : " + intercepts.Count);
-        if (intercepts.Count != 0)
-        {
-            
-            Drone min_drone = null;
-            float min_intercept = 1000000000;
-
-            foreach(Tuple<Drone, float> t in intercepts)
-            {
-                if (t.Item2 < min_intercept)
-                {
-                    min_intercept = t.Item2;
-                    min_drone = t.Item1;
-                } 
-            }
-
-            float angle = Vector3.Angle(move, min_drone.direction);
-            move = Quaternion.AngleAxis(angle, Vector3.up) * move;
-
-            //info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - (5 * (1 / min_intercept)), 2, 15));
-            DrawIntercept(info_drone, min_intercept);
-
-            return move * v;
-
-        }
-        else
-        {
-            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + 0.5f, 0, 15));
-            return move * v;
-        }
-        
+        move = AdjustIntercept(info_drone, move);
+        move = AdjustFormation(info_drone, move);
+        AdjustGoalSpeed(info_drone, goal);
+        return move * v;
     }
 
     public void AddDrone(DroneController drone, float target_velocity)
