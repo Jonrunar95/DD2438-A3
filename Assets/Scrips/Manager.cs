@@ -10,14 +10,16 @@ public class Drone
     public float velocity, R;
     public int id;
     public PidController controller;
+    public float target_velocity;
 
 
     private DateTime start;
 
     public Drone(DroneController drone, float R)
     {
+        
         this.R = R;
-        controller = new PidController(1, 1, 1, 1, 0); //TODO: Need to fine tune these
+        controller = new PidController(0.1, 0.1, 0.3, drone.max_speed, 0); //TODO: Need to fine tune these
         start = DateTime.Now;
         id = drone.GetInstanceID();
         Update(drone);
@@ -25,13 +27,14 @@ public class Drone
 
     public float GetEstimatedVelocityInput()
     {
-        float res = (float)controller.ControlVariable(start - DateTime.Now);
+        float res = (float)controller.ControlVariable(DateTime.Now - start);
         start = DateTime.Now;
         return res;
     }
 
     public void SetTargetVelocity(float velocity)
     {
+        target_velocity = velocity;
         controller.SetPoint = velocity;
     }
 
@@ -45,6 +48,7 @@ public class Drone
         position = drone.transform.position;
         direction = drone.velocity.normalized;
         velocity = drone.velocity.magnitude;
+        UpdateController();
     }
 
     public float NextIntercept(Drone drone)
@@ -55,33 +59,42 @@ public class Drone
          */
 
 
-        System.Numerics.Complex a = new System.Numerics.Complex(position.x, position.z);
-        System.Numerics.Complex b = new System.Numerics.Complex(drone.position.x, drone.position.z);
+        float dt = Time.deltaTime;
 
-        //Vector2 a = new Vector2(position.x, position.z);
-        //Vector2 b = new Vector2(drone.position.x, drone.position.z);
-
-        if (Math.Abs(a.Real - b.Real) <= float.Epsilon || Math.Abs(a.Imaginary - b.Imaginary) <= float.Epsilon) return float.NaN;
-
-        System.Numerics.Complex v1 = new System.Numerics.Complex(direction.x, direction.z) * velocity;
-        System.Numerics.Complex v2 = new System.Numerics.Complex(drone.direction.x, drone.direction.z) * velocity;
-
-        //Vector2 v1 = new Vector2(direction.x, direction.z) * velocity;
-        //Vector2 v2 = new Vector2(drone.direction.x, drone.direction.z) * velocity;
-
-        float delta = Time.deltaTime;
+        Vector2 a = new Vector2(position.x, position.z);
+        Vector2 b = new Vector2(drone.position.x, drone.position.z);
 
 
-        float t1 = (float)((-a + b - 2 * R) / (delta*(v1 + v2))).Imaginary;
-        float t2 = (float)((-a + b + 2 * R) / (delta*(v1 + v2))).Imaginary;
+        Vector2 v1 = new Vector2(direction.x, direction.z) * velocity*dt;
+        Vector2 v2 = new Vector2(drone.direction.x, drone.direction.z) * velocity*dt;
 
-        if (t1 < 0 && t2 < 0) return float.NaN;
 
-        if (t1 < 0) return t2;
+        float x = Vector2.Dot(v1 - v2, v1 - v2);
+        float y = Vector2.Dot(a - b, v1 - v2);
+        float z = Vector2.Dot(a - b, a - b);
 
-        if (t2 < 0) return t1;
+        if (x == 0 && y != 0)
+        {
+            return -((z - 4 * R*R) / 2 * y);
+        }
 
-        return Math.Min(t1, t2);
+        if (x != 0)
+        {
+            float t1 = (float)-((Math.Sqrt(4 * R * R * x - x * z + y * y) + y) / x);
+            float t2 = (float)((Math.Sqrt(4 * R * R * x - x * z + y * y) - y) / x);
+
+            //if (t1 < 0 || t2 < 0) throw new Exception("Invalid intercept calculations");
+            float t = Mathf.Clamp(Math.Min(t1, t2), 0, 10000f);
+
+            if (t >= 100f)
+            {
+                return float.NaN;
+            }
+            return t;
+        }
+
+
+        return float.NaN;
     }
 
     public float Distance(Drone drone)
@@ -138,9 +151,9 @@ public class Manager
 
     private void DrawIntercept(Drone from, float t)
     {
-        Debug.Log(">> Min intercept: " + t);
-        Debug.Log(">> direction x, y, z :" + from.direction.x + "," + from.direction.y + "," + from.direction.z);
-        Debug.Log(">> velocity: " + from.velocity);
+        //Debug.Log(">> Min intercept: " + t*Time.deltaTime);
+        //Debug.Log(">> direction x, y, z :" + from.direction.x + "," + from.direction.y + "," + from.direction.z);
+        //Debug.Log(">> velocity: " + from.velocity);
 
         Debug.DrawLine(from.position, from.position + from.direction * from.velocity * t * Time.deltaTime, Color.magenta, 0.1f);
     }
@@ -150,18 +163,29 @@ public class Manager
         
         Drone info_drone = drone_population[drone.GetInstanceID()];
 
-        info_drone.UpdateController();
+        
         info_drone.Update(drone);
 
+        float v = info_drone.GetEstimatedVelocityInput();
 
-        Vector3 move = goal - info_drone.position;
+        /*Test pid controller
+
+
+        
+
+        return (goal - info_drone.position) * v;
+        */
+
+        Vector3 move = (goal - info_drone.position).normalized;
 
         List<Tuple<Drone, float>> intercepts = Interceptions(info_drone);
 
+        Debug.Log(">> count : " + intercepts.Count);
         if (intercepts.Count != 0)
         {
-            Drone min_drone;
-            float min_intercept = 10000;
+            
+            Drone min_drone = null;
+            float min_intercept = 1000000000;
 
             foreach(Tuple<Drone, float> t in intercepts)
             {
@@ -171,18 +195,29 @@ public class Manager
                     min_drone = t.Item1;
                 } 
             }
-            
+
+            float angle = Vector3.Angle(move, min_drone.direction);
+            move = Quaternion.AngleAxis(angle, Vector3.up) * move;
+
+            //info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - (5 * (1 / min_intercept)), 2, 15));
             DrawIntercept(info_drone, min_intercept);
-            //info_drone.SetTargetVelocity(min_intercept);
-            //TODO add move
+
+            return move * v;
 
         }
-        return move;
+        else
+        {
+            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + 0.5f, 0, 15));
+            return move * v;
+        }
+        
     }
 
-    public void AddDrone(DroneController drone)
+    public void AddDrone(DroneController drone, float target_velocity)
     {
-        drone_population.Add(drone.GetInstanceID(), new Drone(drone, drone_radius));
+        Drone d = new Drone(drone, drone_radius);
+        d.SetTargetVelocity(target_velocity);
+        drone_population.Add(drone.GetInstanceID(), d);
     }
 
     public void Update(DroneController drone)

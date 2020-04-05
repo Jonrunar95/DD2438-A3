@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 //https://github.com/ms-iot/pid-controller/blob/master/PidController/PidController/PidController.cs
 
 public class PidController
@@ -25,6 +26,9 @@ public class PidController
         double error = SetPoint - ProcessVariable;
 
         // integral term calculation
+        //Debug.Log(">> seconds: " + timeSinceLastUpdate.TotalSeconds);
+        //Debug.Log(">> SetPoint: " + SetPoint + " error: " + error);
+        
         IntegralTerm += (GainIntegral * error * timeSinceLastUpdate.TotalSeconds);
         IntegralTerm = Clamp(IntegralTerm);
 
