@@ -15,7 +15,7 @@ public class TerrainManager : MonoBehaviour {
     public GameObject flag;
 
     public float wall_height = 15f;
-
+    public static ResolutionTerrain r_terrain;
 
     // Use this for initialization
     void Start()
@@ -44,6 +44,7 @@ public class TerrainManager : MonoBehaviour {
         Instantiate(flag, myInfo.start_pos, Quaternion.identity);
         Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
 
+        r_terrain = new ResolutionTerrain(this, 1);
 
 
     }

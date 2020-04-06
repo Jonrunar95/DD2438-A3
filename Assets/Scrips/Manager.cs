@@ -197,7 +197,7 @@ public class Manager
 
         List<Tuple<Drone, float>> intercepts = Interceptions(info_drone);
 
-        Debug.Log(">> count : " + intercepts.Count);
+        //Debug.Log(">> count : " + intercepts.Count);
         if (intercepts.Count != 0)
         {
 
@@ -213,7 +213,7 @@ public class Manager
                 }
             }
 
-            Debug.Log(">> min: " + InterceptDistance(info_drone, min_intercept));
+            //Debug.Log(">> min: " + InterceptDistance(info_drone, min_intercept));
             if (InterceptDistance(info_drone, min_intercept) <= intercept_upper_m)
             {
                 float angle = Vector3.Angle(move, min_drone.direction);

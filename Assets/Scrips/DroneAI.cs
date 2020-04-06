@@ -11,20 +11,25 @@ public class DroneAI : MonoBehaviour
     public GameObject my_goal_object;
     public GameObject terrain_manager_game_object;
     TerrainManager terrain_manager;
-    static Manager manager = new Manager(8f, 80f, 8f);
+    static Manager manager = new Manager(8f, 30f, 20f);
     public GameObject[] friends;
     int id = 0;
     static int counter = 0;
+    bool follow_path = true;
+
+    public List<Vector3> my_path;
 
     public const float base_velocity = 8;
+
     private void Start()
     {
         id = counter;
         counter++;
+        System.Random rand = new System.Random();
         // get the drone controller
         m_Drone = GetComponent<DroneController>();
         terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
-        manager.AddDrone(m_Drone, base_velocity);
+        manager.AddDrone(m_Drone, rand.Next(0, 100) < 90 ? 2 : base_velocity);
         
 
         Vector3 start_pos = terrain_manager.myInfo.start_pos;
@@ -32,18 +37,13 @@ public class DroneAI : MonoBehaviour
         friends = GameObject.FindGameObjectsWithTag("Player");
 
 
-        List<Vector3> my_path = new List<Vector3>();
-
+        my_path = TerrainManager.r_terrain.GetPath(m_Drone.transform.position, my_goal_object.transform.position);
+        my_path.Add(my_goal_object.transform.position);
+        Debug.Log(">> path length " + my_path.Count);
         // Plan your path here
         // ...
-        my_path.Add(start_pos);
 
-        for (int i = 0; i < 3; i++)
-        {
-            Vector3 waypoint = start_pos + new Vector3(UnityEngine.Random.Range(-50.0f, 50.0f), 0, UnityEngine.Random.Range(-30.0f, 30.0f));
-            my_path.Add(waypoint);
-        }
-        my_path.Add(goal_pos);
+
 
 
 
@@ -58,6 +58,18 @@ public class DroneAI : MonoBehaviour
         
     }
 
+    public Vector3 GetNextGoal()
+    {
+        for(int i = my_path.Count - 1; i >= 0; i--)
+        {
+            if (TerrainManager.r_terrain.Visible(m_Drone.transform.position, my_path[i]))
+            {
+                return my_path[i];
+            }
+        }
+
+        return m_Drone.transform.position;
+    }
 
     private void FixedUpdate()
     {
@@ -72,18 +84,23 @@ public class DroneAI : MonoBehaviour
 
         //Debug.DrawLine(transform.position, new Vector3(grid_center_x, 0f, grid_center_z), Color.white, 1f);
 
+        Vector3 goal = my_goal_object.transform.position;
+        if (follow_path)
+        {
+            goal = GetNextGoal();
+        }
         
-        Vector3 relVect = my_goal_object.transform.position - transform.position;
+        //Vector3 relVect = my_goal_object.transform.position - transform.position;
 
         //m_Drone.Move_vect(relVect);
 
         
-        Vector3 move = manager.NextMove(m_Drone, my_goal_object.transform.position);
-        Debug.Log(">> Move : " + move.x + "," + move.z);
+        Vector3 move = manager.NextMove(m_Drone, goal);
+        //Debug.Log(">> Move : " + move.x + "," + move.z);
         
         m_Drone.Move_vect(move);
         manager.Update(m_Drone);
-        Debug.DrawLine(m_Drone.transform.position, my_goal_object.transform.position, Color.cyan);
+        Debug.DrawLine(m_Drone.transform.position, goal, Color.cyan);
 
         Debug.DrawLine(m_Drone.transform.position, m_Drone.transform.position + move.normalized*15, Color.black);
         if(id == 0) Debug.Log(">> Drone velocity: " + m_Drone.velocity.magnitude);
