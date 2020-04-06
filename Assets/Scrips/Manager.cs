@@ -228,7 +228,7 @@ public class Manager
             }
             else
             {
-                info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + (1 / InterceptDistance(info_drone, min_intercept)), 0, 15));
+                info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + (1 / InterceptDistance(info_drone, min_intercept)), 3, 15));
             }
             DrawIntercept(info_drone, min_intercept);
 
@@ -253,8 +253,9 @@ public class Manager
             float sum = 0;
             foreach(Tuple<Drone, float> t in surrounding)
             {
-                weights.Add(10000 - t.Item2);
-                sum += 10000 - t.Item2;
+                float dist = Vector3.Distance(t.Item1.position, t.Item1.goal);
+                weights.Add(10000 - t.Item2 - dist);
+                sum += 10000 - t.Item2 - dist;
             }
 
             for(int i = 0; i < surrounding.Count; i++)
@@ -293,7 +294,7 @@ public class Manager
 
 
 
-        bool h = Physics.SphereCast(info_drone.position, 2f, direction, out hit, 50f);
+        bool h = Physics.SphereCast(info_drone.position, 1f, direction, out hit, 50f);
 
         if(h && hit.collider.name == "Cube" && Vector3.Distance(info_drone.position, hit.point) <= 30f)
         {
@@ -328,11 +329,13 @@ public class Manager
 
         Vector3 move = (goal - drone.transform.position).normalized;
 
-        move = AdjustWallRepulsion(info_drone, move);
+        
 
         move = AdjustIntercept(info_drone, move);
         move = AdjustFormation(info_drone, move);
-        
+
+        //move = AdjustWallRepulsion(info_drone, move);
+
         move = AdjustGoalCollision(info_drone, move);
         
 

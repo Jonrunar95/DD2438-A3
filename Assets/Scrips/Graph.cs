@@ -73,7 +73,7 @@ public class ResolutionTerrain
 
         //Debug.DrawLine(from, from + direction * distance, Color.yellow, 1f);
 
-        RaycastHit[] hit =  Physics.SphereCastAll(from-direction,1.5f, direction, distance);
+        RaycastHit[] hit =  Physics.SphereCastAll(from+direction,1.5f, direction, distance);
 
 
         foreach(RaycastHit hh in hit)
