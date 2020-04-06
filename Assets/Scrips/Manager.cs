@@ -6,19 +6,20 @@ using UnityEngine;
 
 public class Drone
 {
-    public Vector3 position, direction;
+    public Vector3 position, direction, goal;
     public float velocity, R;
     public int id;
     public PidController controller;
     public float target_velocity;
-
+    
 
     private DateTime start;
 
-    public Drone(DroneController drone, float R)
+    public Drone(DroneController drone, float R, Vector3 goal)
     {
         
         this.R = R;
+        this.goal = goal;
         controller = new PidController(0.1, 0.1, 0.3, drone.max_speed, 0); //TODO: Need to fine tune these
         start = DateTime.Now;
         id = drone.GetInstanceID();
@@ -165,7 +166,7 @@ public class Manager
             {
                 float dist = drone.Distance(check);
 
-                if (dist <= drone_radius)
+                if (dist <= surrounding_radius)
                 {
                     res.Add(new Tuple<Drone, float>(check, dist));
                 }
@@ -252,8 +253,8 @@ public class Manager
             float sum = 0;
             foreach(Tuple<Drone, float> t in surrounding)
             {
-                weights.Add(t.Item2);
-                sum += t.Item2;
+                weights.Add(10000 - t.Item2);
+                sum += 10000 - t.Item2;
             }
 
             for(int i = 0; i < surrounding.Count; i++)
@@ -265,13 +266,55 @@ public class Manager
         return (0.1f*move - 0.9f*adjust_vector).normalized;
     }
 
+    public Vector3 AdjustGoalCollision(Drone info_drone, Vector3 move)
+    {
+        foreach(Drone drone in drone_population.Values)
+        {
+            if(drone.id != info_drone.id)
+            {
+                Vector3 goal_vector = info_drone.position - drone.goal;
+
+                if(Vector3.Distance(drone.goal, info_drone.position) < 5f)
+                {
+                    return -(move - goal_vector).normalized;
+                }
+            }
+        }
+        return move;
+    }
+
+    public Vector3 AdjustWallRepulsion(Drone info_drone, Vector3 move)
+    {
+
+        
+        Vector3 direction = info_drone.direction.normalized;
+
+        RaycastHit hit;
+
+
+
+        bool h = Physics.SphereCast(info_drone.position, 2f, direction, out hit, 50f);
+
+        if(h && hit.collider.name == "Cube" && Vector3.Distance(info_drone.position, hit.point) <= 30f)
+        {
+            Vector3 repulsion = info_drone.position - hit.collider.ClosestPoint(info_drone.position);
+
+            Debug.DrawLine(info_drone.position, info_drone.position + (move + repulsion.normalized * 100), Color.red);
+            return (move + repulsion).normalized;
+        }
+
+        return move;
+    }
+
     public void AdjustGoalSpeed(Drone info_drone, Vector3 goal)
     {
         if (Vector3.Distance(goal, info_drone.position) <= 15f)
         {
-            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - 0.5f, 1, 15));
+            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - 0.5f, 3, 15));
         }
     }
+
+    
 
     public Vector3 NextMove(DroneController drone, Vector3 goal)
     {
@@ -285,16 +328,26 @@ public class Manager
 
         Vector3 move = (goal - drone.transform.position).normalized;
 
+        move = AdjustWallRepulsion(info_drone, move);
 
         move = AdjustIntercept(info_drone, move);
         move = AdjustFormation(info_drone, move);
+        
+        move = AdjustGoalCollision(info_drone, move);
+        
+
         AdjustGoalSpeed(info_drone, goal);
+        /*
+        if (Vector3.Angle(info_drone.direction, move) >= 45f)
+        {
+            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - 0.5f, 3, 15));
+        }*/
         return move * v;
     }
 
-    public void AddDrone(DroneController drone, float target_velocity)
+    public void AddDrone(DroneController drone, float target_velocity, Vector3 goal)
     {
-        Drone d = new Drone(drone, drone_radius);
+        Drone d = new Drone(drone, drone_radius, goal);
         d.SetTargetVelocity(target_velocity);
         drone_population.Add(drone.GetInstanceID(), d);
     }

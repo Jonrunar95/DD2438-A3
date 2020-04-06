@@ -11,7 +11,7 @@ public class DroneAI : MonoBehaviour
     public GameObject my_goal_object;
     public GameObject terrain_manager_game_object;
     TerrainManager terrain_manager;
-    static Manager manager = new Manager(8f, 30f, 20f);
+    static Manager manager = new Manager(3f, 30f, 5f);
     public GameObject[] friends;
     int id = 0;
     static int counter = 0;
@@ -29,7 +29,7 @@ public class DroneAI : MonoBehaviour
         // get the drone controller
         m_Drone = GetComponent<DroneController>();
         terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
-        manager.AddDrone(m_Drone, rand.Next(0, 100) < 90 ? 2 : base_velocity);
+        manager.AddDrone(m_Drone, rand.Next(0, 100) < 90 ? 2 : base_velocity, my_goal_object.transform.position);
         
 
         Vector3 start_pos = terrain_manager.myInfo.start_pos;

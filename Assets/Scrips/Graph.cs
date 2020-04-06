@@ -69,20 +69,30 @@ public class ResolutionTerrain
 
         int layer_mask = LayerMask.GetMask("CubeWall");
 
-        RaycastHit hit;
+        
 
         //Debug.DrawLine(from, from + direction * distance, Color.yellow, 1f);
 
-   
-        bool h =  Physics.SphereCast(from-direction,1.5f, direction, out hit, distance - 1f);
+        RaycastHit[] hit =  Physics.SphereCastAll(from-direction,1.5f, direction, distance);
 
-        if (h && hit.collider.name == "Cube") return false;
+
+        foreach(RaycastHit hh in hit)
+        {
+
+            if (hh.collider.name == "Cube")
+            {
+                //Debug.DrawLine(from, hh.point, Color.yellow);
+                return false;
+            }
+        }
+        //if (h) Debug.DrawLine(from, hit.point, Color.yellow);
+        //if(h && hit.collider.name != "Cube") Debug.Log(">> Collider name: " + hit.collider.name);
+        //if ((h && hit.collider.name) == "Cube" || (h && Vector3.Distance(hit.point, from) <= 10f) return false;
 
         return true;
         //Debug.DrawLine(from, hit.point, Color.red, 500f);
         Debug.DrawLine(from, to, Color.yellow);
 
-        return !h;
     }
 
     public List<Node> Expand(Node node)
