@@ -13,7 +13,7 @@ using System;
 
         public GameObject terrain_manager_game_object;
         TerrainManager terrain_manager;
-
+		static SManager manager = new SManager(4f, 30f, 7f);
         public GameObject[] friends;
         public string friend_tag;
         public GameObject[] enemies;
@@ -22,14 +22,15 @@ using System;
         public GameObject own_goal;
         public GameObject other_goal;
         public GameObject ball;
-
-
+	    int id = 0;
+    	static int counter = 0;
+		public const float base_velocity = 8;
+		public List<Vector3> my_path;
         private void Start()
         {
             // get the car controller
             m_Drone = GetComponent<DroneController>();
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
-
 
             // note that both arrays will have holes when objects are destroyed
             // but for initial planning they should work
@@ -41,23 +42,28 @@ using System;
 
             friends = GameObject.FindGameObjectsWithTag(friend_tag);
             enemies = GameObject.FindGameObjectsWithTag(enemy_tag);
-
             ball = GameObject.FindGameObjectWithTag("Ball");
 
-
-            // Plan your path here
-            // ...
+			id = counter;
+    	    counter++;
+        	System.Random rand = new System.Random();
+			manager.AddDrone(m_Drone, rand.Next(0, 100) < 90 ? 8f : base_velocity, other_goal.transform.position);
+			my_path = new List<Vector3>();
+			my_path.Add(other_goal.transform.position);
         }
-
 
         private void FixedUpdate()
         {
+			
+			Vector3 move = manager.NextMove(m_Drone, ball.transform.position);
 
+			m_Drone.Move_vect(move);
+        	manager.Update(m_Drone);
 
             // Execute your path here
             // ...
 
-            Vector3 avg_pos = Vector3.zero;
+            /*Vector3 avg_pos = Vector3.zero;
 
             foreach (GameObject friend in friends)
             {
@@ -87,7 +93,7 @@ using System;
             m_Drone.Move_vect(direction);
             //m_Car.Move(0f, -1f, 1f, 0f);
 
-
+			*/
         }
     }
 //}
