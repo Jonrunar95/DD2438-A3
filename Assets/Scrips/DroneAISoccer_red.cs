@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Panda;
 
 
 //namespace UnityStandardAssets.Vehicles.Car
@@ -23,9 +24,10 @@ public class DroneAISoccer_red : MonoBehaviour
     public GameObject other_goal;
     public GameObject ball;
 
-
+	PandaBehaviour myPandaBT;
     private void Start()
     {
+		myPandaBT = GetComponent<PandaBehaviour>();
         // get the car controller
         m_Drone = GetComponent<DroneController>();
         terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
@@ -48,9 +50,13 @@ public class DroneAISoccer_red : MonoBehaviour
         // Plan your path here
         // ...
     }
+	
+	private void Update() {
+		myPandaBT.Reset();
+		myPandaBT.Tick();
+	}
 
-
-    private void FixedUpdate()
+    /*private void FixedUpdate()
     {
 
 
@@ -88,6 +94,6 @@ public class DroneAISoccer_red : MonoBehaviour
         //m_Car.Move(0f, -1f, 1f, 0f);
 
 
-    }
+    }*/
 }
 //}

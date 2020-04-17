@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-
+using Panda;
 
 //namespace UnityStandardAssets.Vehicles.Car
 //{
@@ -18,7 +18,6 @@ using System;
         public string friend_tag;
         public GameObject[] enemies;
         public string enemy_tag;
-
         public GameObject own_goal;
         public GameObject other_goal;
         public GameObject ball;
@@ -26,10 +25,14 @@ using System;
     	static int counter = 0;
 		public const float base_velocity = 8;
 		public List<Vector3> my_path;
+		PandaBehaviour myPandaBT;
         private void Start()
         {
+			Debug.Log("Start");
+			myPandaBT = GetComponent<PandaBehaviour>();
             // get the car controller
             m_Drone = GetComponent<DroneController>();
+			Debug.Log("Drone " + m_Drone);
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
 
             // note that both arrays will have holes when objects are destroyed
@@ -52,7 +55,69 @@ using System;
 			my_path.Add(other_goal.transform.position);
         }
 
-        private void FixedUpdate()
+		[Task]
+        bool isGoalie()
+        {
+			float minDist = float.MaxValue;
+			foreach(GameObject drone in friends) {
+				if(drone.transform.position != m_Drone.transform.position) {
+					float dist = Vector3.Magnitude(drone.transform.position-own_goal.transform.position);
+					if(dist < minDist) {
+						minDist = dist;
+					}
+				}
+			}
+			if(Vector3.Magnitude(m_Drone.transform.position-own_goal.transform.position) < minDist) {
+				return true;
+			}
+			return false;
+		}
+
+		[Task]
+		void Defend(float p)
+		{
+			Vector3 move = (own_goal.transform.position - m_Drone.transform.position).normalized;
+			m_Drone.Move_vect(move);
+		}
+		[Task]
+		bool isChaser()
+		{
+			float minDist = float.MaxValue;
+			foreach(GameObject drone in friends) {
+				if(drone.transform.position != m_Drone.transform.position) {
+					float dist = Vector3.Magnitude(drone.transform.position-ball.transform.position);
+					if(dist < minDist) {
+						minDist = dist;
+					}
+				}
+			}
+			if(Vector3.Magnitude(m_Drone.transform.position-ball.transform.position) < minDist) {
+				return true;
+			}
+			return false;
+		}
+		[Task]
+		void InterceptBall()
+		{
+			Vector3 move = (ball.transform.position - m_Drone.transform.position).normalized;
+			m_Drone.Move_vect(move);
+		}
+		[Task]
+		bool IsBallCloserThan(float p)
+		{
+			return (m_Drone.transform.position-ball.transform.position).sqrMagnitude < p*p;
+		}
+		[Task]
+		void Dribble()
+		{
+			Vector3 move = (ball.transform.position - m_Drone.transform.position).normalized;
+			m_Drone.Move_vect(move);
+		}
+		private void Update() {
+			myPandaBT.Reset();
+			myPandaBT.Tick();
+		}
+		 /*private void FixedUpdate()
         {
 			
 			Vector3 move = manager.NextMove(m_Drone, ball.transform.position);
@@ -63,7 +128,7 @@ using System;
             // Execute your path here
             // ...
 
-            /*Vector3 avg_pos = Vector3.zero;
+            Vector3 avg_pos = Vector3.zero;
 
             foreach (GameObject friend in friends)
             {
@@ -93,7 +158,7 @@ using System;
             m_Drone.Move_vect(direction);
             //m_Car.Move(0f, -1f, 1f, 0f);
 
-			*/
-        }
+			
+        }*/
     }
 //}
