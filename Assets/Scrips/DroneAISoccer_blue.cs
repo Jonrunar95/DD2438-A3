@@ -32,7 +32,6 @@ using Panda;
 			myPandaBT = GetComponent<PandaBehaviour>();
             // get the car controller
             m_Drone = GetComponent<DroneController>();
-			Debug.Log("Drone " + m_Drone);
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
 
             // note that both arrays will have holes when objects are destroyed
@@ -45,9 +44,11 @@ using Panda;
 
             friends = GameObject.FindGameObjectsWithTag(friend_tag);
             enemies = GameObject.FindGameObjectsWithTag(enemy_tag);
+			Debug.Log("Friends: " + friends.Length + " Enemies: " + enemies.Length);
             ball = GameObject.FindGameObjectWithTag("Ball");
 
 			id = counter;
+			Debug.Log("Car ID: " + id);
     	    counter++;
         	System.Random rand = new System.Random();
 			manager.AddDrone(m_Drone, rand.Next(0, 100) < 90 ? 8f : base_velocity, other_goal.transform.position);
@@ -56,10 +57,39 @@ using Panda;
         }
 
 		[Task]
+		bool isInfrontBall()
+		{
+			if((ball.transform.position - other_goal.transform.position).sqrMagnitude < (transform.position - other_goal.transform.position).sqrMagnitude) {
+				return false;
+			}
+			return true;
+		}
+		[Task]
+		bool isBehindBall()
+		{
+			if((ball.transform.position - other_goal.transform.position).sqrMagnitude < (transform.position - other_goal.transform.position).sqrMagnitude) {
+				return true;
+			}
+			return false;
+		}
+		[Task]
+		void GoBehind()
+		{
+			Vector3 goal = ball.transform.position;
+			goal.x -= 15;
+			Vector3 move = (goal - m_Drone.transform.position).normalized;
+			Debug.DrawLine(transform.position, goal, Color.blue, 10f);
+
+			
+			m_Drone.Move_vect(move);
+		}
+		[Task]
         bool isGoalie()
         {
+			Debug.Log(id+" Is Goalie?");
 			float minDist = float.MaxValue;
 			foreach(GameObject drone in friends) {
+				Debug.Log((drone.transform.position != m_Drone.transform.position) + " " + drone.transform.position + " " + m_Drone.transform.position);
 				if(drone.transform.position != m_Drone.transform.position) {
 					float dist = Vector3.Magnitude(drone.transform.position-own_goal.transform.position);
 					if(dist < minDist) {
@@ -72,26 +102,27 @@ using Panda;
 			}
 			return false;
 		}
-
 		[Task]
 		void Defend(float p)
 		{
+			Debug.Log(id+" Defend " + p);
 			Vector3 move = (own_goal.transform.position - m_Drone.transform.position).normalized;
 			m_Drone.Move_vect(move);
 		}
 		[Task]
 		bool isChaser()
 		{
+			Debug.Log(id+" Is Chaser?");
 			float minDist = float.MaxValue;
 			foreach(GameObject drone in friends) {
 				if(drone.transform.position != m_Drone.transform.position) {
-					float dist = Vector3.Magnitude(drone.transform.position-ball.transform.position);
+					float dist = (drone.transform.position-ball.transform.position).sqrMagnitude;
 					if(dist < minDist) {
 						minDist = dist;
 					}
 				}
 			}
-			if(Vector3.Magnitude(m_Drone.transform.position-ball.transform.position) < minDist) {
+			if((m_Drone.transform.position-ball.transform.position).sqrMagnitude < minDist) {
 				return true;
 			}
 			return false;
@@ -99,17 +130,20 @@ using Panda;
 		[Task]
 		void InterceptBall()
 		{
+			Debug.Log(id+" Intercept?");
 			Vector3 move = (ball.transform.position - m_Drone.transform.position).normalized;
 			m_Drone.Move_vect(move);
 		}
 		[Task]
 		bool IsBallCloserThan(float p)
 		{
+			Debug.Log(id+" Is ball closer?");
 			return (m_Drone.transform.position-ball.transform.position).sqrMagnitude < p*p;
 		}
 		[Task]
 		void Dribble()
 		{
+			Debug.Log(id+" dribble?");
 			Vector3 move = (ball.transform.position - m_Drone.transform.position).normalized;
 			m_Drone.Move_vect(move);
 		}

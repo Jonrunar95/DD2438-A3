@@ -24,10 +24,10 @@ public class DroneAISoccer_red : MonoBehaviour
     public GameObject other_goal;
     public GameObject ball;
 
-	PandaBehaviour myPandaBT;
+	//PandaBehaviour myPandaBT;
     private void Start()
     {
-		myPandaBT = GetComponent<PandaBehaviour>();
+		//myPandaBT = GetComponent<PandaBehaviour>();
         // get the car controller
         m_Drone = GetComponent<DroneController>();
         terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
@@ -51,12 +51,12 @@ public class DroneAISoccer_red : MonoBehaviour
         // ...
     }
 	
-	private void Update() {
+	/*private void Update() {
 		myPandaBT.Reset();
 		myPandaBT.Tick();
-	}
+	}*/
 
-    /*private void FixedUpdate()
+    private void FixedUpdate()
     {
 
 
@@ -85,7 +85,7 @@ public class DroneAISoccer_red : MonoBehaviour
         Debug.DrawLine(transform.position, own_goal.transform.position, Color.green);
         Debug.DrawLine(transform.position, other_goal.transform.position, Color.yellow);
         Debug.DrawLine(transform.position, friends[0].transform.position, Color.cyan);
-        Debug.DrawLine(transform.position, enemies[0].transform.position, Color.magenta);
+        //Debug.DrawLine(transform.position, enemies[0].transform.position, Color.magenta);
 
 
 
@@ -94,6 +94,6 @@ public class DroneAISoccer_red : MonoBehaviour
         //m_Car.Move(0f, -1f, 1f, 0f);
 
 
-    }*/
+    }
 }
 //}
