@@ -10,7 +10,6 @@ using Panda;
     public class DroneAISoccer_blue : MonoBehaviour
     {
         private DroneController m_Drone; // the drone controller we want to use
-
         public GameObject terrain_manager_game_object;
         TerrainManager terrain_manager;
 		static SManager manager = new SManager(4f, 30f, 7f);
@@ -36,7 +35,7 @@ using Panda;
 
             // note that both arrays will have holes when objects are destroyed
             // but for initial planning they should work
-            friend_tag = gameObject.tag;
+            friend_tag = "Blue";
             if (friend_tag == "Blue")
                 enemy_tag = "Red";
             else
@@ -55,9 +54,8 @@ using Panda;
 			my_path = new List<Vector3>();
 			my_path.Add(other_goal.transform.position);
         }
-
 		[Task]
-		bool isInfrontBall()
+		private bool BisInfrontBall()
 		{
 			if((ball.transform.position - other_goal.transform.position).sqrMagnitude < (transform.position - other_goal.transform.position).sqrMagnitude) {
 				return false;
@@ -65,7 +63,7 @@ using Panda;
 			return true;
 		}
 		[Task]
-		bool isBehindBall()
+		private bool BisBehindBall()
 		{
 			if((ball.transform.position - other_goal.transform.position).sqrMagnitude < (transform.position - other_goal.transform.position).sqrMagnitude) {
 				return true;
@@ -73,18 +71,16 @@ using Panda;
 			return false;
 		}
 		[Task]
-		void GoBehind()
+		private void BGoBehind()
 		{
 			Vector3 goal = ball.transform.position;
 			goal.x -= 15;
 			Vector3 move = (goal - m_Drone.transform.position).normalized;
 			Debug.DrawLine(transform.position, goal, Color.blue, 10f);
-
-			
 			m_Drone.Move_vect(move);
 		}
 		[Task]
-        bool isGoalie()
+        private bool BisGoalie()
         {
 			Debug.Log(id+" Is Goalie?");
 			float minDist = float.MaxValue;
@@ -103,14 +99,14 @@ using Panda;
 			return false;
 		}
 		[Task]
-		void Defend(float p)
+		private void BDefend(float p)
 		{
 			Debug.Log(id+" Defend " + p);
 			Vector3 move = (own_goal.transform.position - m_Drone.transform.position).normalized;
 			m_Drone.Move_vect(move);
 		}
 		[Task]
-		bool isChaser()
+		private bool BisChaser()
 		{
 			Debug.Log(id+" Is Chaser?");
 			float minDist = float.MaxValue;
@@ -128,20 +124,20 @@ using Panda;
 			return false;
 		}
 		[Task]
-		void InterceptBall()
+		private void BInterceptBall()
 		{
 			Debug.Log(id+" Intercept?");
 			Vector3 move = (ball.transform.position - m_Drone.transform.position).normalized;
 			m_Drone.Move_vect(move);
 		}
 		[Task]
-		bool IsBallCloserThan(float p)
+		private bool BIsBallCloserThan(float p)
 		{
 			Debug.Log(id+" Is ball closer?");
 			return (m_Drone.transform.position-ball.transform.position).sqrMagnitude < p*p;
 		}
 		[Task]
-		void Dribble()
+		private void BDribble()
 		{
 			Debug.Log(id+" dribble?");
 			Vector3 move = (ball.transform.position - m_Drone.transform.position).normalized;

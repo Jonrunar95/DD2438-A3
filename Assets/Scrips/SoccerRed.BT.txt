@@ -1,0 +1,21 @@
+tree("Root")
+  	tree("version1")
+
+tree("version1")
+	fallback
+		sequence
+			RisGoalie
+			RDefend 0.3
+		sequence
+			RisBehindBall
+			RDribble
+		sequence
+			RisInfrontBall
+			RGoBehind
+
+tree("Chaser")
+	fallback
+		sequence
+			RIsBallCloserThan 10.0
+			RDribble
+		RInterceptBall

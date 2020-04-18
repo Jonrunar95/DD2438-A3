@@ -11,6 +11,9 @@ public class GameManagerSoccer : MonoBehaviour
 
     public GameObject race_car;
 
+    public GameObject blue_car;
+    public GameObject red_car;
+
     public GameObject blue_goal;
     public GameObject red_goal;
 
@@ -63,11 +66,13 @@ public class GameManagerSoccer : MonoBehaviour
             {
                 team_tag = "Blue";
                 team_color = Color.blue;
+                race_car = blue_car;
             }
             else
             {
                 team_tag = "Red";
                 team_color = Color.red;
+                race_car = red_car;
             }
 
             GameObject new_car;
