@@ -190,25 +190,29 @@ public class DroneAISoccer_blue : MonoBehaviour
 
         if(!intercept)
         {
-			Vector3 ballPos = own_goal.transform.position;
-			if (ball.transform.position.z < ballPos.z - 10)
-			{
-				ballPos.z -= 10;
-			}
-			else if (ball.transform.position.z > ballPos.z + 10)
-			{
-				ballPos.z += 10;
-			}
-			else
-			{
-				ballPos.z = ball.transform.position.z;
-			}
+			Debug.Log("p: " + p);
+			int sign = (friend_tag == "Blue") ? 1 : -1;
 
-			Vector3 move = (ballPos - m_Drone.transform.position).normalized;
-			m_Drone.Move_vect(move);
+			Vector3 pos = new Vector3(own_goal.transform.position.x + sign*p * field_width * 0.5f, 0, ball.transform.position.z);
+
+            Vector3 move = (pos - m_Drone.transform.position).normalized;
+			m_Drone.Move_vect(move.normalized);
 		}
 
 	}
+
+    [Task]
+    void BRepulse()
+    {
+
+    }
+
+    [Task]
+    bool BisStuck()
+    {
+		return false;
+    }
+
 	[Task]
 	bool BisChaser()
 	{

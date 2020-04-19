@@ -3,6 +3,8 @@
 
 tree("version1")
 	fallback
+        sequence
+            BisStuck BRepulse
 		sequence
 			BisGoalie tree("Goalie")
 		sequence
@@ -28,4 +30,4 @@ tree("Goalie")
 tree("Center")
     fallback
         sequence
-            BDefend 0.35
+            BDefend 0.5
