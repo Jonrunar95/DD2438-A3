@@ -12,10 +12,3 @@ tree("version1")
 		sequence
 			BisInfrontBall
 			BGoBehind
-
-tree("Chaser")
-	fallback
-		sequence
-			BIsBallCloserThan 10.0
-			BDribble
-		BInterceptBall
