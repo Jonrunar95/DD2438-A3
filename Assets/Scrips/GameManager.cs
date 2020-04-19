@@ -56,6 +56,8 @@ public class GameManager : MonoBehaviour {
             car_sphere.GetComponent<Renderer>().material.SetColor("_Color", my_color);
 
             GameObject goal_sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Collider c = goal_sphere.GetComponent<Collider>();
+            c.enabled = false;
 
             nominal_pos = CircularConfiguration(i, no_of_cars, 0.8f);
             goal_sphere.transform.position = GetCollisionFreePosNear(nominal_pos, 50f);

@@ -44,7 +44,7 @@ public class TerrainManager : MonoBehaviour {
         Instantiate(flag, myInfo.start_pos, Quaternion.identity);
         Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
 
-        r_terrain = new ResolutionTerrain(this, 1);
+        r_terrain = new ResolutionTerrain(this, 2);
 
 
     }

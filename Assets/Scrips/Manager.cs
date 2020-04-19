@@ -20,7 +20,7 @@ public class Drone
         
         this.R = R;
         this.goal = goal;
-        controller = new PidController(0.1, 0.1, 0.3, drone.max_speed, 0); //TODO: Need to fine tune these
+        controller = new PidController(0.1, 0.1, 0.3, drone.max_speed, 2); //TODO: Need to fine tune these
         start = DateTime.Now;
         id = drone.GetInstanceID();
         Update(drone);
@@ -123,7 +123,7 @@ public class Drone
 
 public class Manager
 {
-    private Dictionary<int, Drone> drone_population;
+    public Dictionary<int, Drone> drone_population;
     private float drone_radius, intercept_upper_m, surrounding_radius;
 
     public Manager(float drone_radius, float intercept_upper_m, float surrounding_radius)
@@ -224,18 +224,18 @@ public class Manager
 
             if (InterceptDistance(info_drone, min_intercept) <= 10f)
             {
-                info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - ((1 / InterceptDistance(info_drone, min_intercept))), 6, 15));
+                info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - ((1 / InterceptDistance(info_drone, min_intercept))), 1f, 15));
             }
             else
             {
-                info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + (1 / InterceptDistance(info_drone, min_intercept)), 3, 15));
+                info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + (1 / InterceptDistance(info_drone, min_intercept)), 1f, 15));
             }
             DrawIntercept(info_drone, min_intercept);
 
         }
         else
         {
-            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + 0.5f, 0, 15));
+            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity + 0.02f, 1f, 15));
         }
         return move;
     }
@@ -290,20 +290,35 @@ public class Manager
         
         Vector3 direction = info_drone.direction.normalized;
 
-        RaycastHit hit;
+        //RaycastHit hit;
+
+        RaycastHit[] hit = Physics.SphereCastAll(info_drone.position, 5f, direction, 50f);
 
 
+        foreach (RaycastHit hh in hit)
+        {
 
-        bool h = Physics.SphereCast(info_drone.position, 1f, direction, out hit, 50f);
+            if (hh.collider.name == "Cube" && Vector3.Distance(info_drone.position, hh.point) <= 7f)
+            {
+                Vector3 repulsion = info_drone.position - hh.collider.ClosestPoint(info_drone.position);
 
-        if(h && hit.collider.name == "Cube" && Vector3.Distance(info_drone.position, hit.point) <= 30f)
+                Debug.DrawLine(info_drone.position, info_drone.position + (move + repulsion.normalized * 100), Color.yellow);
+                return (move + repulsion * 100).normalized;
+                
+            }
+        }
+
+        /*
+        bool h = Physics.SphereCast(info_drone.position, 5f, direction, out hit, 50f);
+
+        if(h && hit.collider.name == "Cube" && Vector3.Distance(info_drone.position, hit.point) <= 7f)
         {
             Vector3 repulsion = info_drone.position - hit.collider.ClosestPoint(info_drone.position);
 
             Debug.DrawLine(info_drone.position, info_drone.position + (move + repulsion.normalized * 100), Color.red);
-            return (move + repulsion).normalized;
+            return (move + repulsion * 100).normalized;
         }
-
+        */
         return move;
     }
 
@@ -311,7 +326,7 @@ public class Manager
     {
         if (Vector3.Distance(goal, info_drone.position) <= 15f)
         {
-            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - 0.5f, 3, 15));
+            info_drone.SetTargetVelocity(Mathf.Clamp(info_drone.target_velocity - 0.02f, 1.5f, 4));
         }
     }
 
@@ -331,15 +346,15 @@ public class Manager
 
         
 
-        move = AdjustIntercept(info_drone, move);
+        //move = AdjustIntercept(info_drone, move);
         move = AdjustFormation(info_drone, move);
 
-        //move = AdjustWallRepulsion(info_drone, move);
+        move = AdjustWallRepulsion(info_drone, move);
 
-        move = AdjustGoalCollision(info_drone, move);
+        //move = AdjustGoalCollision(info_drone, move);
         
 
-        AdjustGoalSpeed(info_drone, goal);
+        //AdjustGoalSpeed(info_drone, goal);
         /*
         if (Vector3.Angle(info_drone.direction, move) >= 45f)
         {

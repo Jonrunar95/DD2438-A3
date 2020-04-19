@@ -81,9 +81,11 @@ public class GameManagerSoccer : MonoBehaviour
 
             //new_car = Instantiate(race_car, new Vector3(20.0f + i * 8.0f, 10.0f, 20f), Quaternion.identity);
             new_car = Instantiate(race_car, Vector3.zero, Quaternion.identity);
+           
             new_car.tag = team_tag;
 
             Vector3 nominal_pos = CircularConfiguration(i + (int)Mathf.Floor(no_of_cars / 2), no_of_cars, 0.2f);
+            Debug.DrawLine(new Vector3(), nominal_pos, Color.red, 100f);
             new_car.transform.position = GetCollisionFreePosNear(nominal_pos, 10f);
             my_cars.Add(new_car);
 
@@ -137,6 +139,8 @@ public class GameManagerSoccer : MonoBehaviour
                 new_AI_gr1 = new_car.GetComponent<DroneAISoccer_blue>();
                 new_AI_gr2 = new_car.GetComponent<DroneAISoccer_red>();
 
+                
+                
                 if (team_tag == "Blue")
                 {
                     //new_AI.my_goal_object = red_goal;
@@ -146,6 +150,7 @@ public class GameManagerSoccer : MonoBehaviour
                     new_AI_gr2.other_goal = red_goal;
                     new_AI_gr1.enabled = true;
                     new_AI_gr2.enabled = false;
+
                 }
                 else
                 {

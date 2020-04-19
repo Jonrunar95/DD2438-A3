@@ -1,0 +1,14 @@
+﻿tree("Root")
+  	tree("version1")
+
+tree("version1")
+	fallback
+		sequence
+			BisGoalie
+			BDefend 0.3
+		sequence
+			BisBehindBall
+			BDribble
+		sequence
+			BisInfrontBall
+			BGoBehind
