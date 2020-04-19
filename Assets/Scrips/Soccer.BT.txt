@@ -4,11 +4,28 @@
 tree("version1")
 	fallback
 		sequence
-			BisGoalie
-			BDefend
+			BisGoalie tree("Goalie")
 		sequence
-			BisBehindBall
-			BDribble
+			BisChaser tree("Chaser")
 		sequence
-			BisInfrontBall
-			BGoBehind
+			BisCenter tree("Center")
+
+tree("Chaser")
+    fallback
+        sequence
+            BisBehindBall
+            BDribble
+        sequence
+            BisInfrontBall
+            BGoBehind
+
+tree("Goalie")
+    fallback
+        sequence
+            BDefend 0.15
+
+
+tree("Center")
+    fallback
+        sequence
+            BDefend 0.35

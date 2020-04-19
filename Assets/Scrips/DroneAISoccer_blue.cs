@@ -32,34 +32,38 @@ public class DroneAISoccer_blue : MonoBehaviour
 	public float ball_mass = 1f;
 	public float drone_mass = 1000f;
 	public float drone_max_speed = 15f;
-    public float ball_radius = 20f;
+    public float ball_radius = 2.0f;
 	public float drone_radius = 1.2f;
-
+	public float field_width = 180f;
 	InterceptMathOperations ops = new InterceptMathOperations();
 
 	public float velocity = 0;
 
 
 	bool GoalKeeper = false;
+	bool Chaser = false;
+	bool Center = false;
+
 	Vector3 oldBallPos;
+	Vector3 deltaBall = Vector3.zero;
 	Vector3 dir = Vector3.one;
 
 	private void Start()
 	{
 		id = counter;
 		counter++;
-		if (id == 0)
-		{
-			GoalKeeper = true;
-		}
-
+		if (id == 0) GoalKeeper = true;
+		if (id == 1) Chaser = true;
+		if (id == 2) Center = true;
 
 		ball_mass = 1f;
 	    drone_mass = 1000f;
-	    drone_max_speed = 15f;
+	    drone_max_speed = 10f;
 	    ball_radius = 2.1f;
-	    drone_radius = 1.4f;
+	    drone_radius = 1f;
+		field_width = 180f;
 
+		Debug.Log("Start");
 		myPandaBT = GetComponent<PandaBehaviour>();
 		// get the car controller
 		m_Drone = GetComponent<DroneController>();
@@ -77,6 +81,7 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 		friends = GameObject.FindGameObjectsWithTag(friend_tag);
 		enemies = GameObject.FindGameObjectsWithTag(enemy_tag);
+		Debug.Log("Friends: " + friends.Length + " Enemies: " + enemies.Length);
 		ball = GameObject.FindGameObjectWithTag("Ball");
 		ball_position = ball.transform.position;
 
@@ -91,6 +96,12 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 		
 	}
+
+    [Task]
+    private void Bfoo()
+    {
+
+    }
 
 	[Task]
 	private bool BisInfrontBall()
@@ -118,16 +129,19 @@ public class DroneAISoccer_blue : MonoBehaviour
 		Vector3 goal = ball.transform.position;
 		goal.x -= 5;
 		bool crash = false;
-		for(int i = 1; i < 51; i++) {
-			Vector3 ballPos = ball.transform.position + ball_velocity*i;
-			Vector3 dronePos = transform.position + m_Drone.velocity*i;
+		for (int i = 1; i < 51; i++)
+		{
+			Vector3 ballPos = ball.transform.position + ball_velocity * i;
+			Vector3 dronePos = transform.position + m_Drone.velocity * i;
 			Vector3 diff = ballPos - dronePos;
-			if(Mathf.Abs(diff.x) > 1 || Mathf.Abs(diff.y) > 1 || Mathf.Abs(diff.z) > 1) {
+			if (Mathf.Abs(diff.x) > 1 || Mathf.Abs(diff.y) > 1 || Mathf.Abs(diff.z) > 1)
+			{
 				crash = true;
 				i = 51;
 			}
 		}
-		if(crash) {
+		if (crash)
+		{
 			goal.z += 5;
 		}
 		Vector3 move = (goal - m_Drone.transform.position).normalized;
@@ -138,30 +152,44 @@ public class DroneAISoccer_blue : MonoBehaviour
 	[Task]
 	private bool BisGoalie()
 	{
+		Debug.Log("is Goalie: " + GoalKeeper);
 		return GoalKeeper;
 	}
 
+
 	[Task]
-	private void BDefend()
+	private void BDefend(float p)
 	{
-		bool b = false;
-		for (int t = 1; t < 51; t++)
-		{
-			Vector3 ballPos = oldBallPos + t * ball_velocity;
-			if (
-				ballPos.x > own_goal.transform.position.x - 1 && ballPos.x < own_goal.transform.position.x + 1 &&
-				ballPos.y > own_goal.transform.position.y && ballPos.y < own_goal.transform.position.y + 10 &&
-				ballPos.z > own_goal.transform.position.z - 15 && ballPos.z < own_goal.transform.position.z + 15
-			)
-			{
-				Vector3 move = (ballPos - m_Drone.transform.position).normalized;
-				m_Drone.Move_vect(move);
-				b = true;
-				return;
+
+		RaycastHit hit;
+
+		RaycastHit[] hh = Physics.SphereCastAll(ball.transform.position, ball_radius, ball_velocity);
+
+		bool intercept = false;
+        foreach(RaycastHit h in hh)
+        {
+			if (h.collider.name.Contains(friend_tag) && h.collider.name.Contains("goal")) intercept = true;
+        }
+
+        if (intercept ||  Math.Abs(ball.transform.position.x - own_goal.transform.position.x) <= p * field_width)
+        {
+			float tt;
+			Vector3 move = FindIntercept(out tt, "Goalie");
+
+            if((tt*dir).magnitude <= p * field_width)
+            {
+				manager.SetTargetVelocity(m_Drone, move.magnitude);
+
+				m_Drone.Move_vect(move.normalized * manager.GetVelocity(m_Drone));
 			}
-		}
-		if (!b)
-		{
+            else
+            {
+				intercept = false;
+            }
+        }
+
+        if(!intercept)
+        {
 			Vector3 ballPos = own_goal.transform.position;
 			if (ball.transform.position.z < ballPos.z - 10)
 			{
@@ -181,23 +209,24 @@ public class DroneAISoccer_blue : MonoBehaviour
 		}
 
 	}
-	
 	[Task]
 	bool BisChaser()
 	{
-		return !BisGoalie();
+		Debug.Log(id + " Is Chaser?");
+		return Chaser;
 	}
 
-	[Task]
-	private void BInterceptBall()
-	{
-		Vector3 move = (ball.transform.position - m_Drone.transform.position).normalized;
-		m_Drone.Move_vect(move);
-	}
+    [Task]
+    bool BisCenter()
+    {
+		return Center;
+    }
+
 
 	[Task]
 	private bool BIsBallCloserThan(float p)
 	{
+		Debug.Log(id + " Is ball closer?");
 		return (m_Drone.transform.position - ball.transform.position).sqrMagnitude < p * p;
 	}
 
@@ -205,14 +234,16 @@ public class DroneAISoccer_blue : MonoBehaviour
 	void BDribble()
 	{
 		
-		Vector3 move = FindIntercept();//(ball.transform.position - m_Drone.transform.position).normalized;
+		Debug.Log(id + " dribble?");
+		float tt;
+		Vector3 move = FindIntercept(out tt);//(ball.transform.position - m_Drone.transform.position).normalized;
 
 		manager.SetTargetVelocity(m_Drone, move.magnitude);
 
 		m_Drone.Move_vect(move.normalized * manager.GetVelocity(m_Drone));
 	}
 
-    public Vector3 FindGoodDirectionVector(List<Vector3> vecs)
+    public Vector3 FindGoodDirectionVector(List<Vector3> vecs, out int idx)
     {
 		float sep_angle = 5;
 
@@ -252,6 +283,8 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 		Vector3 res = new Vector3();
 		float mn_angle = 10000f;
+		idx = -1;
+		int ii = 0;
         foreach(Vector3 v in sets[max_id])
         {
 			float max_angle = 0;
@@ -264,21 +297,25 @@ public class DroneAISoccer_blue : MonoBehaviour
             {
 				mn_angle = max_angle;
 				res = v;
+				idx = ii;
             }
+			ii++;
         }
 
 		return res;
 
 	}
 
-    public Vector3 FindIntercept()
+    public Vector3 FindIntercept(out float tt, string player = "Chaser")
     {
-		int N = 50;
+		int N = 100;
 		List<Vector3> potential_intercept_points = ops.GeneratePointsOnCircle(ball.transform.position, ball_radius, N);
+		Debug.Log(">> ball radius: " + ball_radius);
 		ops.GeneratePointsOnCircle(m_Drone.transform.position, drone_radius, N);
 		Vector3 res = (ball.transform.position - m_Drone.transform.position).normalized;
 		float mn = 100000f;
 		List<Vector3> all_vecs = new List<Vector3>();
+		List<float> all_t = new List<float>();
 		foreach (Vector3 p in potential_intercept_points)
         {
 			//Vector3 drone_loc, Vector3 ball_loc, float drone_max_speed, Vector3 ball_v, float drone_radius, out float t, out Vector3 direction
@@ -295,36 +332,53 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 				Vector3 new_ball_v = ops.GetBallVelocityAfterCollision(direction, ball_velocity, drone_loc_collision, ball_loc_collision, drone_mass, ball_mass);
 
-				
-				RaycastHit hit;
-
-				bool h = Physics.SphereCast(ball_loc_collision, ball_radius, new_ball_v, out hit);
-
-
-                if (h && hit.collider.name.Contains(enemy_tag))
+				if(player == "Chaser")
                 {
-					float dot = Vector3.Dot(direction, new_ball_v) / Vector3.Distance(direction, new_ball_v);
-					//Debug.DrawLine(ball_loc_collision, ball_loc_collision + new_ball_v, Color.magenta);
-					//Debug.DrawLine(m_Drone.transform.position, m_Drone.transform.position + direction, Color.cyan);
-					all_vecs.Add(direction);
-					/*if (dot < mn)
-                    {
-				        mn = dot;
-						res = direction;
-                    }*/
+					RaycastHit hit;
 
+					Debug.Log(">> Collider found " + new_ball_v.magnitude + "id :" + id);
+					bool h = Physics.SphereCast(ball_loc_collision, ball_radius, new_ball_v, out hit);
+
+
+					if (h && hit.collider.name.Contains(enemy_tag))
+					{
+						float dot = Vector3.Dot(direction, new_ball_v) / Vector3.Distance(direction, new_ball_v);
+						Debug.DrawLine(ball_loc_collision, ball_loc_collision + new_ball_v, Color.magenta);
+						Debug.DrawLine(m_Drone.transform.position, m_Drone.transform.position + direction, Color.cyan);
+						all_vecs.Add(direction);
+						all_t.Add(t);
+					}
 				}
+                else if(player == "Goalie")
+                {
+					Vector3 og_pos = own_goal.transform.position;
+
+					if (Vector3.Distance(og_pos + new_ball_v, og_pos) > Vector3.Distance(og_pos + ball_velocity, og_pos))
+                    {
+						Debug.DrawLine(ball_loc_collision, ball_loc_collision + new_ball_v, Color.magenta);
+						Debug.DrawLine(m_Drone.transform.position, m_Drone.transform.position + direction, Color.cyan);
+						all_vecs.Add(direction);
+						all_t.Add(t);
+					}
+					
+				}
+				
 
 			}
 		}
 
         if(all_vecs.Count != 0)
         {
-			return FindGoodDirectionVector(all_vecs);
+			int idx;
+			res = FindGoodDirectionVector(all_vecs, out idx);
+			tt = all_t[idx];
+			return res;
         }
+		tt = 0;
 		return res;
 	}
     
+
 	private void Update()
 	{
 		myPandaBT.Reset();
