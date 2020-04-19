@@ -5,7 +5,7 @@ tree("version1")
 	fallback
 		sequence
 			BisGoalie
-			BDefend 0.3
+			BDefend
 		sequence
 			BisBehindBall
 			BDribble

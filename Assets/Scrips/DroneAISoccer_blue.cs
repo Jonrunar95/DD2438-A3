@@ -42,7 +42,6 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 	bool GoalKeeper = false;
 	Vector3 oldBallPos;
-	Vector3 deltaBall = Vector3.zero;
 	Vector3 dir = Vector3.one;
 
 	private void Start()
@@ -61,7 +60,6 @@ public class DroneAISoccer_blue : MonoBehaviour
 	    ball_radius = 2.1f;
 	    drone_radius = 1.4f;
 
-	    Debug.Log("Start");
 		myPandaBT = GetComponent<PandaBehaviour>();
 		// get the car controller
 		m_Drone = GetComponent<DroneController>();
@@ -79,7 +77,6 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 		friends = GameObject.FindGameObjectsWithTag(friend_tag);
 		enemies = GameObject.FindGameObjectsWithTag(enemy_tag);
-		Debug.Log("Friends: " + friends.Length + " Enemies: " + enemies.Length);
 		ball = GameObject.FindGameObjectWithTag("Ball");
 		ball_position = ball.transform.position;
 
@@ -119,33 +116,38 @@ public class DroneAISoccer_blue : MonoBehaviour
 	private void BGoBehind()
 	{
 		Vector3 goal = ball.transform.position;
-		goal.x -= 15;
+		goal.x -= 5;
+		bool crash = false;
+		for(int i = 1; i < 51; i++) {
+			Vector3 ballPos = ball.transform.position + ball_velocity*i;
+			Vector3 dronePos = transform.position + m_Drone.velocity*i;
+			Vector3 diff = ballPos - dronePos;
+			if(Mathf.Abs(diff.x) > 1 || Mathf.Abs(diff.y) > 1 || Mathf.Abs(diff.z) > 1) {
+				crash = true;
+				i = 51;
+			}
+		}
+		if(crash) {
+			goal.z += 5;
+		}
 		Vector3 move = (goal - m_Drone.transform.position).normalized;
+		Debug.DrawRay(goal, dir, Color.black, 10f);
 		m_Drone.Move_vect(move);
 	}
 
 	[Task]
 	private bool BisGoalie()
 	{
-		Debug.Log("is Goalie: " + GoalKeeper);
 		return GoalKeeper;
 	}
 
 	[Task]
-	void Defend(float p)
-	{
-		Debug.Log(id + " Defend " + p);
-		Vector3 move = (own_goal.transform.position - m_Drone.transform.position).normalized;
-		m_Drone.Move_vect(move);
-	}
-
-	[Task]
-	private void BDefend(float p)
+	private void BDefend()
 	{
 		bool b = false;
-		for (int t = 1; t < 101; t++)
+		for (int t = 1; t < 51; t++)
 		{
-			Vector3 ballPos = oldBallPos + t * deltaBall;
+			Vector3 ballPos = oldBallPos + t * ball_velocity;
 			if (
 				ballPos.x > own_goal.transform.position.x - 1 && ballPos.x < own_goal.transform.position.x + 1 &&
 				ballPos.y > own_goal.transform.position.y && ballPos.y < own_goal.transform.position.y + 10 &&
@@ -155,19 +157,19 @@ public class DroneAISoccer_blue : MonoBehaviour
 				Vector3 move = (ballPos - m_Drone.transform.position).normalized;
 				m_Drone.Move_vect(move);
 				b = true;
-				break;
+				return;
 			}
 		}
 		if (!b)
 		{
 			Vector3 ballPos = own_goal.transform.position;
-			if (ball.transform.position.z < ballPos.z - 15)
+			if (ball.transform.position.z < ballPos.z - 10)
 			{
-				ballPos.z -= 15;
+				ballPos.z -= 10;
 			}
-			else if (ball.transform.position.z > ballPos.z + 15)
+			else if (ball.transform.position.z > ballPos.z + 10)
 			{
-				ballPos.z += 15;
+				ballPos.z += 10;
 			}
 			else
 			{
@@ -179,17 +181,16 @@ public class DroneAISoccer_blue : MonoBehaviour
 		}
 
 	}
+	
 	[Task]
 	bool BisChaser()
 	{
-		Debug.Log(id + " Is Chaser?");
 		return !BisGoalie();
 	}
 
 	[Task]
 	private void BInterceptBall()
 	{
-		Debug.Log(id + " Intercept?");
 		Vector3 move = (ball.transform.position - m_Drone.transform.position).normalized;
 		m_Drone.Move_vect(move);
 	}
@@ -197,7 +198,6 @@ public class DroneAISoccer_blue : MonoBehaviour
 	[Task]
 	private bool BIsBallCloserThan(float p)
 	{
-		Debug.Log(id + " Is ball closer?");
 		return (m_Drone.transform.position - ball.transform.position).sqrMagnitude < p * p;
 	}
 
@@ -205,7 +205,6 @@ public class DroneAISoccer_blue : MonoBehaviour
 	void BDribble()
 	{
 		
-		Debug.Log(id + " dribble?");
 		Vector3 move = FindIntercept();//(ball.transform.position - m_Drone.transform.position).normalized;
 
 		manager.SetTargetVelocity(m_Drone, move.magnitude);
@@ -276,7 +275,6 @@ public class DroneAISoccer_blue : MonoBehaviour
     {
 		int N = 50;
 		List<Vector3> potential_intercept_points = ops.GeneratePointsOnCircle(ball.transform.position, ball_radius, N);
-		Debug.Log(">> ball radius: " + ball_radius);
 		ops.GeneratePointsOnCircle(m_Drone.transform.position, drone_radius, N);
 		Vector3 res = (ball.transform.position - m_Drone.transform.position).normalized;
 		float mn = 100000f;
@@ -300,15 +298,14 @@ public class DroneAISoccer_blue : MonoBehaviour
 				
 				RaycastHit hit;
 
-				Debug.Log(">> Collider found " + new_ball_v.magnitude + "id :" + id);
 				bool h = Physics.SphereCast(ball_loc_collision, ball_radius, new_ball_v, out hit);
 
 
                 if (h && hit.collider.name.Contains(enemy_tag))
                 {
 					float dot = Vector3.Dot(direction, new_ball_v) / Vector3.Distance(direction, new_ball_v);
-					Debug.DrawLine(ball_loc_collision, ball_loc_collision + new_ball_v, Color.magenta);
-					Debug.DrawLine(m_Drone.transform.position, m_Drone.transform.position + direction, Color.cyan);
+					//Debug.DrawLine(ball_loc_collision, ball_loc_collision + new_ball_v, Color.magenta);
+					//Debug.DrawLine(m_Drone.transform.position, m_Drone.transform.position + direction, Color.cyan);
 					all_vecs.Add(direction);
 					/*if (dot < mn)
                     {
@@ -328,7 +325,6 @@ public class DroneAISoccer_blue : MonoBehaviour
 		return res;
 	}
     
-
 	private void Update()
 	{
 		myPandaBT.Reset();
