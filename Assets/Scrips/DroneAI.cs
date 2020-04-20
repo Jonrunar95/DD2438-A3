@@ -11,7 +11,7 @@ public class DroneAI : MonoBehaviour
     public GameObject my_goal_object;
     public GameObject terrain_manager_game_object;
     TerrainManager terrain_manager;
-    static Manager manager = new Manager(2.5f, 15f, 4.5f);
+    static Manager manager = new Manager(3f, 70f, 15f);
     public GameObject[] friends;
     int id = 0;
 
@@ -54,7 +54,7 @@ public class DroneAI : MonoBehaviour
         TerrainManager.r_terrain.seen.Clear();
         foreach (var wp in my_path)
         {
-            Debug.DrawLine(old_wp, wp, Color.red, 100f);
+            //Debug.DrawLine(old_wp, wp, Color.red, 100f);
             old_wp = wp;
         }
         
@@ -129,7 +129,7 @@ public class DroneAI : MonoBehaviour
 
         // this is how you access information about the terrain
         elapsed += Time.deltaTime;
-        if (elapsed < id * 1.5f)
+        if (elapsed < id * 0.22f)
         {
             //Vector3 relVect = my_goal_object.transform.position - transform.position;
 

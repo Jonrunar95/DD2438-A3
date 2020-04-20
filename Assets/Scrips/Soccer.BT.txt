@@ -24,10 +24,16 @@ tree("Chaser")
 tree("Goalie")
     fallback
         sequence
-            BDefend 0.15
+            BisBallInDefenceLine 0.4
+            tree("Chaser")
+        sequence
+            BDefend 0.0
 
 
 tree("Center")
     fallback
+        sequence
+            BisBallInDefenceLine 0.5
+            tree("Chaser")
         sequence
             BDefend 0.5

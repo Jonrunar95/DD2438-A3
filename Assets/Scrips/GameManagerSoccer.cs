@@ -85,7 +85,7 @@ public class GameManagerSoccer : MonoBehaviour
             new_car.tag = team_tag;
 
             Vector3 nominal_pos = CircularConfiguration(i + (int)Mathf.Floor(no_of_cars / 2), no_of_cars, 0.2f);
-            Debug.DrawLine(new Vector3(), nominal_pos, Color.red, 100f);
+            //Debug.DrawLine(new Vector3(), nominal_pos, Color.red, 100f);
             new_car.transform.position = GetCollisionFreePosNear(nominal_pos, 10f);
             my_cars.Add(new_car);
 

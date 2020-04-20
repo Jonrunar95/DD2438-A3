@@ -346,9 +346,9 @@ public class Manager
 
         
 
-        //move = AdjustIntercept(info_drone, move);
+        
         move = AdjustFormation(info_drone, move);
-
+        move = AdjustIntercept(info_drone, move);
         move = AdjustWallRepulsion(info_drone, move);
 
         //move = AdjustGoalCollision(info_drone, move);
