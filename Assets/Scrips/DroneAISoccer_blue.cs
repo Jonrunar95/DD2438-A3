@@ -127,8 +127,9 @@ public class DroneAISoccer_blue : MonoBehaviour
 	private void BGoBehind()
 	{
 		Vector3 goal = ball.transform.position;
-		goal.x -= 5;
-		Vector3 move = (goal - m_Drone.transform.position).normalized;
+        int sign = (friend_tag == "Blue") ? -1 : 1;
+		goal.x += sign*5;
+		Vector3 move = (goal - m_Drone.transform.position).normalized; 
 		//Debug.DrawLine(transform.position, goal, Color.blue, 10f);
 		m_Drone.Move_vect(move);
 		/*Vector3 goal = ball.transform.position;
