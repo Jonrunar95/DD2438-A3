@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-
+//https://gist.github.com/paralleltree/31045ab26f69b956052c
 class PriorityQueue<T> where T : IComparable
 {
     private List<T> list;

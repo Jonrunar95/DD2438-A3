@@ -25,9 +25,28 @@ public class DroneAI : MonoBehaviour
 
     public const float base_velocity = 1.5f;
     float elapsed = 0;
+    static List<int> ids = new List<int>();
+
+    private void Randomize(List<int> ids)
+    {
+        System.Random rand = new System.Random();
+
+        for(int i = 0; i < ids.Count; i++)
+        {
+            int a = rand.Next(0, ids.Count);
+            int b = rand.Next(0, ids.Count);
+
+            int t = ids[a];
+            ids[a] = ids[b];
+            ids[b] = t;
+        }
+    }
     private void Start()
     {
         id = counter;
+        ids.Add(id);
+        Randomize(ids);
+        id = ids[id];
         counter++;
         System.Random rand = new System.Random();
         // get the drone controller
@@ -129,7 +148,7 @@ public class DroneAI : MonoBehaviour
 
         // this is how you access information about the terrain
         elapsed += Time.deltaTime;
-        if (elapsed < id * 0.22f)
+        if (elapsed < id * 0.28f)
         {
             //Vector3 relVect = my_goal_object.transform.position - transform.position;
 

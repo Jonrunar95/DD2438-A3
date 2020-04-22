@@ -31,7 +31,7 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 	public float ball_mass = 1f;
 	public float drone_mass = 1000f;
-	public float drone_max_speed = 15f;
+	public float drone_max_speed = 5f;
     public float ball_radius = 2.0f;
 	public float drone_radius = 1.2f;
 	public float field_width = 180f;
@@ -58,9 +58,9 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 		ball_mass = 1f;
 	    drone_mass = 1000f;
-	    drone_max_speed = 10f;
+	    drone_max_speed = 15f;
 	    ball_radius = 2.1f;
-	    drone_radius = 1.6f;
+	    drone_radius = 1.4f;
 		field_width = 180f;
 
 		Debug.Log("Start");
@@ -126,12 +126,16 @@ public class DroneAISoccer_blue : MonoBehaviour
 	[Task]
 	private void BGoBehind()
 	{
+		int d = 5;
+		if (Center || GoalKeeper) d = 10;
 		Vector3 goal = ball.transform.position;
         int sign = (friend_tag == "Blue") ? -1 : 1;
-		goal.x += sign*5;
-		Vector3 move = (goal - m_Drone.transform.position).normalized; 
+		goal.x += sign*d;
+		Vector3 move = (goal - m_Drone.transform.position).normalized;
+		Debug.DrawLine(m_Drone.transform.position, goal, Color.yellow, 1f);
+		manager.SetTargetVelocity(m_Drone, drone_max_speed);
 		//Debug.DrawLine(transform.position, goal, Color.blue, 10f);
-		m_Drone.Move_vect(move);
+		m_Drone.Move_vect(move.normalized * manager.GetVelocity(m_Drone));
 		/*Vector3 goal = ball.transform.position;
 		goal.x -= 5;
 		bool crash = false;
@@ -213,7 +217,7 @@ public class DroneAISoccer_blue : MonoBehaviour
 			Vector3 pos = new Vector3(x, 0, (GoalKeeper) ? z : ball.transform.position.z);
 
             Vector3 move = (pos - m_Drone.transform.position).normalized;
-			m_Drone.Move_vect(move.normalized);
+			m_Drone.Move_vect(move);
 		}
 
 	}
@@ -221,18 +225,19 @@ public class DroneAISoccer_blue : MonoBehaviour
     [Task]
     void BRepulse()
     {
+		Vector3 move = Quaternion.AngleAxis(-90 * Time.deltaTime, Vector3.up) * m_Drone.velocity;
 		foreach (GameObject obj in enemies)
 		{
 			if (Vector3.Distance(obj.transform.position, m_Drone.transform.position) <= 2 * drone_radius + 0.5)
 			{
-				m_Drone.Move_vect(m_Drone.velocity*10);
+				m_Drone.Move_vect(move);
 			}
 		}
 		foreach (GameObject obj in friends)
 		{
 			if (Vector3.Distance(obj.transform.position, m_Drone.transform.position) >= drone_radius/2 && Vector3.Distance(obj.transform.position, m_Drone.transform.position) <= 2 * drone_radius + 2)
 			{
-				m_Drone.Move_vect(m_Drone.velocity*10);
+				m_Drone.Move_vect(move);
 			}
 		}
 	}
@@ -249,7 +254,7 @@ public class DroneAISoccer_blue : MonoBehaviour
         }
 		foreach (GameObject obj in friends)
 		{
-			if (obj.transform.position != m_Drone.transform.position && Vector3.Distance(obj.transform.position, m_Drone.transform.position) <= 2 * drone_radius + 2)
+			if (Vector3.Distance(obj.transform.position, m_Drone.transform.position) >= drone_radius / 2 && Vector3.Distance(obj.transform.position, m_Drone.transform.position) <= 2 * drone_radius + 2)
 			{
 				return true;
 			}
@@ -440,8 +445,7 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 	private void Update()
 	{
-		myPandaBT.Reset();
-		myPandaBT.Tick();
+		
 	}
 
     private void FixedUpdate()
@@ -452,9 +456,10 @@ public class DroneAISoccer_blue : MonoBehaviour
 		ball_position = ball.transform.position;
 
 		manager.Update(m_Drone);
-        //Debug.DrawLine(ball_position, ball_position + ball_velocity, Color.black);
+		//Debug.DrawLine(ball_position, ball_position + ball_velocity, Color.black);
 
-
+		myPandaBT.Reset();
+		myPandaBT.Tick();
 
 	}
 }
